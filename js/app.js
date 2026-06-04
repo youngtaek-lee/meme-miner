@@ -1,5 +1,5 @@
 import { parseKakaoTxt, getMembers } from './parser.js';
-import { analyzeAll } from './analyzer.js';
+import { analyzeAll, analyzePersonalWords } from './analyzer.js';
 
 let lastResults = null; // URL 공유용 저장
 
@@ -53,8 +53,9 @@ function processFile(file) {
       }
 
       const results = analyzeAll(messages, members);
-      lastResults = { results, total: messages.length, memberCount: members.length };
-      renderResults(results, messages, members);
+      const personalWords = analyzePersonalWords(messages, members);
+      lastResults = { results, personalWords, total: messages.length, memberCount: members.length };
+      renderResults(results, personalWords, messages, members);
 
       loadingScreen.style.display = 'none';
       resultScreen.style.display = 'block';
@@ -66,7 +67,7 @@ function processFile(file) {
   reader.readAsText(file, 'UTF-8');
 }
 
-function renderResults(results, messages, members) {
+function renderResults(results, personalWords, messages, members) {
   const header = document.querySelector('.result-header p');
   header.textContent = `총 ${messages.length.toLocaleString()}개 메시지 · 참여자 ${members.length}명`;
 
@@ -76,6 +77,8 @@ function renderResults(results, messages, members) {
   for (const section of results) {
     container.appendChild(buildCard(section));
   }
+
+  container.appendChild(buildPersonalCard(personalWords));
 }
 
 function buildCard(section) {
@@ -131,6 +134,43 @@ function rankRow(r, max, unit) {
       <span class="rank-score">${r.score.toLocaleString()}${unit}</span>
     </div>
   `;
+}
+
+function buildPersonalCard(personalWords) {
+  const card = document.createElement('div');
+  card.className = 'section-card personal-card';
+
+  const members = Object.keys(personalWords);
+  const grids = members.map(name => {
+    const words = personalWords[name];
+    const maxCount = words[0]?.count || 1;
+    const tags = words.map(({ word, count }) => {
+      const pct = Math.round((count / maxCount) * 100);
+      return `<div class="word-tag" style="opacity:${0.4 + pct * 0.006}">
+        <span class="word-text">${word}</span>
+        <span class="word-count">${count}</span>
+      </div>`;
+    }).join('');
+
+    return `
+      <div class="member-word-card">
+        <div class="member-name-label">${name}</div>
+        <div class="word-tags">${tags || '<span style="color:var(--text-muted);font-size:0.8rem">데이터 없음</span>'}</div>
+      </div>
+    `;
+  }).join('');
+
+  card.innerHTML = `
+    <div class="section-header">
+      <span class="section-emoji">💬</span>
+      <div>
+        <div class="section-title">단골 표현</div>
+        <div class="section-desc">이 사람 하면 떠오르는 바로 그 말</div>
+      </div>
+    </div>
+    <div class="personal-grid">${grids}</div>
+  `;
+  return card;
 }
 
 function getSectionDesc(emoji) {
@@ -203,6 +243,7 @@ function loadFromHash() {
     const container = document.querySelector('.sections');
     container.innerHTML = '';
     for (const section of data.results) container.appendChild(buildCard(section));
+    if (data.personalWords) container.appendChild(buildPersonalCard(data.personalWords));
     lastResults = data;
     uploadScreen.style.display = 'none';
     loadingScreen.style.display = 'none';

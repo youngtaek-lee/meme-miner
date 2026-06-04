@@ -303,6 +303,53 @@ body {
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ── 단골 표현 카드 ── */
+.personal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  padding: 20px 24px 24px;
+}
+
+.member-word-card {
+  background: var(--surface2);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.member-name-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+
+.word-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.word-tag {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--surface);
+  border-radius: 20px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+}
+
+.word-text {
+  font-size: 0.83rem;
+  font-weight: 500;
+}
+
+.word-count {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
 /* ── 반응형 ── */
 @media (max-width: 480px) {
   .podium-name { font-size: 0.78rem; }

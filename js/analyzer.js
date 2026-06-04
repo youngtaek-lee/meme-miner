@@ -189,6 +189,55 @@ export function analyzeTypo(messages, members) {
   return { title: '맞춤법 파괴자', emoji: '🪓', unit: '회', ranked: rank(scores) };
 }
 
+// 불용어 — 너무 흔해서 개성이 없는 단어들
+const STOPWORDS = new Set([
+  '이','그','저','나','너','우리','제','걔','얘','쟤',
+  '아','어','오','음','흠','음','에','의','을','를','은','는','이','가','도','만','로','으로',
+  '그냥','진짜','그거','이거','저거','거','것','뭐','왜','어떻게','어디','언제','누가','누구',
+  '있어','없어','했어','할게','할까','하자','해요','해','하면','하고','하는','하지','한다',
+  '같아','같은','같이','이제','이미','또','다시','더','좀','잠깐','그래서','그런데','근데','그리고',
+  '맞아','아니','아닌가','근데','사실','그냥','되게','완전','너무','정말','진짜','약간','좀',
+  '이모티콘','사진','동영상','삭제된','메시지',
+  'ㅇㅇ','ㅇㅋ','ㄴㄴ','ㅎㅎ','ㅋㅋ','ㅠㅠ','ㅜㅜ','ㄱㄱ','ㅅㅂ','ㅈㄴ',
+]);
+
+// 개인별 단골 표현 분석
+export function analyzePersonalWords(messages, members) {
+  const memberWords = {};
+  for (const m of members) memberWords[m] = {};
+
+  for (const msg of messages) {
+    if (!memberWords[msg.name]) continue;
+    if (['사진','이모티콘','동영상'].includes(msg.content.trim())) continue;
+
+    // 공백·특수문자로 분리
+    const tokens = msg.content
+      .split(/[\s\n.,!?~·…'"「」『』【】<>{}()\[\]\/\\|@#$%^&*+=]+/)
+      .map(t => t.trim())
+      .filter(t => {
+        if (t.length < 2) return false;
+        if (STOPWORDS.has(t)) return false;
+        if (/^\d+$/.test(t)) return false;          // 순수 숫자
+        if (/^[a-zA-Z]{1,2}$/.test(t)) return false; // 영문 1-2글자
+        return true;
+      });
+
+    for (const token of tokens) {
+      memberWords[msg.name][token] = (memberWords[msg.name][token] || 0) + 1;
+    }
+  }
+
+  // 멤버별 top8
+  const result = {};
+  for (const m of members) {
+    result[m] = Object.entries(memberWords[m])
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([word, count]) => ({ word, count }));
+  }
+  return result;
+}
+
 export function analyzeAll(messages, members) {
   return [
     analyzeShare(messages, members),
