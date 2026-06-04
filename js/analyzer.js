@@ -189,51 +189,78 @@ export function analyzeTypo(messages, members) {
   return { title: '맞춤법 파괴자', emoji: '🪓', unit: '회', ranked: rank(scores) };
 }
 
-// 불용어 — 너무 흔해서 개성이 없는 단어들
+// 불용어 — 누구나 쓰는 일상 단어, 개성 없는 단어
 const STOPWORDS = new Set([
-  '이','그','저','나','너','우리','제','걔','얘','쟤',
-  '아','어','오','음','흠','음','에','의','을','를','은','는','이','가','도','만','로','으로',
-  '그냥','진짜','그거','이거','저거','거','것','뭐','왜','어떻게','어디','언제','누가','누구',
-  '있어','없어','했어','할게','할까','하자','해요','해','하면','하고','하는','하지','한다',
-  '같아','같은','같이','이제','이미','또','다시','더','좀','잠깐','그래서','그런데','근데','그리고',
-  '맞아','아니','아닌가','근데','사실','그냥','되게','완전','너무','정말','진짜','약간','좀',
+  // 대명사
+  '나','너','우리','저','제','걔','얘','쟤','나는','내가','나도','나한테','저는','제가','저도',
+  '너는','네가','너도','우리는','우리가','우리도','자기','본인',
+  // 지시어
+  '이거','저거','그거','이게','저게','그게','이건','저건','그건','이걸','저걸','그걸',
+  '여기','거기','저기','이쪽','저쪽','그쪽','이때','그때','저때',
+  // 시간
+  '오늘','내일','어제','지금','아까','나중','요즘','최근','이제','벌써','아직','방금',
+  '오전','오후','새벽','아침','점심','저녁','밤','낮',
+  // 일반 동사/형용사 어미
+  '있어','없어','했어','할게','할까','하자','해요','해','하면','하고','하는','하지','한다','하는데',
+  '됐어','될거야','될것같아','됩니다','되는','되면','되고',
+  '같아','같은','같이','인데','이고','이랑','이나',
+  // 접속사/부사
+  '그래서','그런데','근데','그리고','하지만','그냥','이제','이미','또','다시','더','좀',
+  '잠깐','사실','약간','되게','완전','너무','정말','진짜','아니','맞아','그래','응',
+  '일단','아무튼','어쨌든','그냥','뭐','왜','어떻게','어디','언제',
+  // 일반 명사
+  '밥','집','일','시간','사람','친구','거기','오빠','언니','형','누나','동생',
+  '생각','말','거','것','때','곳','데','분','점','번','개',
+  // 시스템
   '이모티콘','사진','동영상','삭제된','메시지',
-  'ㅇㅇ','ㅇㅋ','ㄴㄴ','ㅎㅎ','ㅋㅋ','ㅠㅠ','ㅜㅜ','ㄱㄱ','ㅅㅂ','ㅈㄴ',
+  // 자음모음
+  'ㅇㅇ','ㅇㅋ','ㄴㄴ','ㅎㅎ','ㅋㅋ','ㅠㅠ','ㅜㅜ','ㄱㄱ','ㅅㅂ','ㅈㄴ','ㄷㄷ','ㄹㅇ',
 ]);
 
 // 개인별 단골 표현 분석
 export function analyzePersonalWords(messages, members) {
   const memberWords = {};
+  const totalWords = {};
   for (const m of members) memberWords[m] = {};
 
   for (const msg of messages) {
     if (!memberWords[msg.name]) continue;
     if (['사진','이모티콘','동영상'].includes(msg.content.trim())) continue;
 
-    // 공백·특수문자로 분리
     const tokens = msg.content
       .split(/[\s\n.,!?~·…'"「」『』【】<>{}()\[\]\/\\|@#$%^&*+=]+/)
       .map(t => t.trim())
       .filter(t => {
         if (t.length < 2) return false;
         if (STOPWORDS.has(t)) return false;
-        if (/^\d+$/.test(t)) return false;          // 순수 숫자
-        if (/^[a-zA-Z]{1,2}$/.test(t)) return false; // 영문 1-2글자
+        if (/^\d+$/.test(t)) return false;
+        if (/^[a-zA-Z]{1,2}$/.test(t)) return false;
         return true;
       });
 
     for (const token of tokens) {
       memberWords[msg.name][token] = (memberWords[msg.name][token] || 0) + 1;
+      totalWords[token] = (totalWords[token] || 0) + 1;
     }
   }
 
-  // 멤버별 top8
+  const totalMsgs = messages.length;
+
+  // 멤버별 top8 — 독특함 점수 = 본인 빈도 / 전체 빈도 (유독 많이 쓰는 단어 우선)
   const result = {};
   for (const m of members) {
+    const memberMsgCount = messages.filter(msg => msg.name === m).length || 1;
     result[m] = Object.entries(memberWords[m])
-      .sort((a, b) => b[1] - a[1])
+      .filter(([, cnt]) => cnt >= 2) // 최소 2회 이상
+      .map(([word, count]) => {
+        const globalRate = (totalWords[word] || 1) / totalMsgs;
+        const personalRate = count / memberMsgCount;
+        const uniqueness = personalRate / globalRate; // 높을수록 이 사람 특유
+        return { word, count, uniqueness };
+      })
+      .sort((a, b) => b.uniqueness - a.uniqueness)
       .slice(0, 8)
-      .map(([word, count]) => ({ word, count }));
+      .map(({ word, count }) => ({ word, count }));
   }
   return result;
 }
