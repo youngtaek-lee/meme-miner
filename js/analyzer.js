@@ -238,7 +238,7 @@ export function analyzePersonalWords(messages, members) {
     if (!memberWords[msg.name]) continue;
     if (['사진','이모티콘','동영상'].includes(msg.content.trim())) continue;
 
-    const raw = normalizeToken(msg.content.trim());
+    const raw = normalizeToken(msg.content.trim().replace(/@\S+/g, '').trim());
 
     // 짧은 메시지 전체를 공백 제거해서 하나의 표현으로 추가
     // 순수 한글+자음모음만 허용 (숫자·영문 섞인 건 제외)
