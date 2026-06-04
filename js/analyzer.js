@@ -207,7 +207,7 @@ const STOPWORDS = new Set([
   // 접속사/부사
   '그래서','그런데','근데','그리고','하지만','그냥','이제','이미','또','다시','더','좀',
   '잠깐','사실','약간','되게','완전','너무','정말','진짜','아니','맞아','그래','응',
-  '일단','아무튼','어쨌든','그냥','뭐','왜','어떻게','어디','언제',
+  '아무튼','어쨌든','그냥','뭐','왜','어떻게','어디','언제',
   // 일반 명사
   '밥','집','일','시간','사람','친구','거기','오빠','언니','형','누나','동생',
   '생각','말','거','것','때','곳','데','분','점','번','개',
@@ -246,20 +246,33 @@ export function analyzePersonalWords(messages, members) {
 
   const totalMsgs = messages.length;
 
-  // 멤버별 top8 — 독특함 점수 = 본인 빈도 / 전체 빈도 (유독 많이 쓰는 단어 우선)
+  // 멤버별 — 독특함 top6 + 빈도 top2 합산
   const result = {};
   for (const m of members) {
     const memberMsgCount = messages.filter(msg => msg.name === m).length || 1;
-    result[m] = Object.entries(memberWords[m])
-      .filter(([, cnt]) => cnt >= 2) // 최소 2회 이상
+
+    const entries = Object.entries(memberWords[m])
+      .filter(([, cnt]) => cnt >= 2)
       .map(([word, count]) => {
         const globalRate = (totalWords[word] || 1) / totalMsgs;
         const personalRate = count / memberMsgCount;
-        const uniqueness = personalRate / globalRate; // 높을수록 이 사람 특유
+        const uniqueness = personalRate / globalRate;
         return { word, count, uniqueness };
-      })
+      });
+
+    // 독특함 상위 6개
+    const byUniqueness = [...entries]
       .sort((a, b) => b.uniqueness - a.uniqueness)
-      .slice(0, 8)
+      .slice(0, 6);
+
+    // 순수 빈도 상위 2개 (언어 습관 — 이미 뽑힌 단어 제외)
+    const picked = new Set(byUniqueness.map(e => e.word));
+    const byFreq = [...entries]
+      .sort((a, b) => b.count - a.count)
+      .filter(e => !picked.has(e.word))
+      .slice(0, 2);
+
+    result[m] = [...byUniqueness, ...byFreq]
       .map(({ word, count }) => ({ word, count }));
   }
   return result;
