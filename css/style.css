@@ -111,6 +111,21 @@ body {
   margin-top: 16px;
 }
 
+.share-footer {
+  max-width: 720px;
+  margin: 0 auto 60px;
+  padding: 0 24px;
+  display: flex;
+  gap: 12px;
+}
+
+.share-footer .share-btn {
+  flex: 1;
+  padding: 14px;
+  font-size: 0.95rem;
+  border-radius: 12px;
+}
+
 .reset-btn, .share-btn {
   padding: 8px 18px;
   border-radius: 8px;
