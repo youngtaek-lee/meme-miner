@@ -180,10 +180,10 @@ export function analyzeTypo(messages, members) {
     }
   }
 
-  // 2회 이상 반복된 오류 패턴 수 합산
+  // 모든 오류 횟수 합산
   const scores = {};
   for (const m of members) {
-    scores[m] = Object.values(patternCounts[m]).filter(c => c >= 2).reduce((a, b) => a + b, 0);
+    scores[m] = Object.values(patternCounts[m]).reduce((a, b) => a + b, 0);
   }
 
   return { title: '맞춤법 파괴자', emoji: '🪓', unit: '회', ranked: rank(scores) };
