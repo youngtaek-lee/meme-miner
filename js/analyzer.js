@@ -211,11 +211,22 @@ const STOPWORDS = new Set([
   // 일반 명사
   '밥','집','일','시간','사람','친구','거기','오빠','언니','형','누나','동생',
   '생각','말','거','것','때','곳','데','분','점','번','개',
+  // 지역명
+  '서울','부산','대구','인천','광주','대전','울산','세종','제주',
+  '경기','강원','충북','충남','전북','전남','경북','경남',
+  '수원','성남','고양','용인','창원','청주','전주','천안','안산','안양','평택','시흥','화성','남양주','부천','의정부','파주','김포',
+  '강남','강북','강서','강동','마포','종로','용산','홍대','신촌','이태원','여의도','판교','분당','일산',
+  '동구','서구','남구','북구','중구','수성구','달서구','해운대','사상','금정',
   // 시스템
   '이모티콘','사진','동영상','삭제된','메시지',
   // 자음모음
   'ㅇㅇ','ㅇㅋ','ㄴㄴ','ㅎㅎ','ㅋㅋ','ㅠㅠ','ㅜㅜ','ㄱㄱ','ㅅㅂ','ㅈㄴ','ㄷㄷ','ㄹㅇ',
 ]);
+
+// ㅋㅋㅋ... → ㅋㅋ, ㅎㅎㅎ... → ㅎㅎ 등 반복 자음모음 정규화
+function normalizeToken(str) {
+  return str.replace(/([ㄱ-ㅎㅏ-ㅣ])\1{5,}/g, '$1$1$1$1$1');
+}
 
 // 개인별 단골 표현 분석
 export function analyzePersonalWords(messages, members) {
@@ -227,20 +238,36 @@ export function analyzePersonalWords(messages, members) {
     if (!memberWords[msg.name]) continue;
     if (['사진','이모티콘','동영상'].includes(msg.content.trim())) continue;
 
-    const tokens = msg.content
+    const raw = normalizeToken(msg.content.trim());
+
+    // 짧은 메시지 전체를 공백 제거해서 하나의 표현으로 추가
+    // 순수 한글+자음모음만 허용 (숫자·영문 섞인 건 제외)
+    const collapsed = raw.replace(/\s+/g, '');
+    const isPureKorean = /^[가-힣ㄱ-ㅎㅏ-ㅣ]+$/.test(collapsed);
+    const shortPhraseTokens = (isPureKorean && collapsed.length >= 2 && collapsed.length <= 15 && !STOPWORDS.has(collapsed))
+      ? [collapsed] : [];
+
+    const wordTokens = raw
       .split(/[\s\n.,!?~·…'"「」『』【】<>{}()\[\]\/\\|@#$%^&*+=]+/)
       .map(t => t.trim())
       .filter(t => {
         if (t.length < 2) return false;
         if (STOPWORDS.has(t)) return false;
-        if (/^\d+$/.test(t)) return false;
-        if (/^[a-zA-Z]{1,2}$/.test(t)) return false;
+        if (/[a-zA-Z]/.test(t)) return false; // 영문 포함 토큰 제외
+        if (t === collapsed) return false; // 단어토큰과 중복 방지
         return true;
       });
+
+    const tokens = [...shortPhraseTokens, ...wordTokens];
 
     for (const token of tokens) {
       memberWords[msg.name][token] = (memberWords[msg.name][token] || 0) + 1;
       totalWords[token] = (totalWords[token] || 0) + 1;
+    }
+    // collapsed 구문은 phraseTokens로도 따로 기록 (부스트용)
+    if (shortPhraseTokens.length > 0) {
+      const pt = shortPhraseTokens[0];
+      memberWords[msg.name][`__phrase__${pt}`] = (memberWords[msg.name][`__phrase__${pt}`] || 0) + 1;
     }
   }
 
@@ -252,28 +279,32 @@ export function analyzePersonalWords(messages, members) {
     const memberMsgCount = messages.filter(msg => msg.name === m).length || 1;
 
     const entries = Object.entries(memberWords[m])
-      .filter(([, cnt]) => cnt >= 2)
+      .filter(([word, cnt]) => cnt >= 2 && !word.startsWith('__phrase__'))
       .map(([word, count]) => {
         const globalRate = (totalWords[word] || 1) / totalMsgs;
         const personalRate = count / memberMsgCount;
         const uniqueness = personalRate / globalRate;
-        return { word, count, uniqueness };
+        // 독특함 × 횟수 조합 점수 — 많이 쓸수록, 남들은 안 쓸수록 높음
+        const score = uniqueness * count;
+        return { word, count, score };
       });
 
-    // 독특함 상위 6개
-    const byUniqueness = [...entries]
-      .sort((a, b) => b.uniqueness - a.uniqueness)
-      .slice(0, 6);
-
-    // 순수 빈도 상위 2개 (언어 습관 — 이미 뽑힌 단어 제외)
-    const picked = new Set(byUniqueness.map(e => e.word));
+    // 빈도 상위 3개 (자주 하는 말)
     const byFreq = [...entries]
       .sort((a, b) => b.count - a.count)
-      .filter(e => !picked.has(e.word))
-      .slice(0, 2);
+      .slice(0, 3);
 
-    result[m] = [...byUniqueness, ...byFreq]
-      .map(({ word, count }) => ({ word, count }));
+    // 독특함 상위 6개 (이 사람만 쓰는 느낌)
+    const freqWords = new Set(byFreq.map(e => e.word));
+    const byUnique = [...entries]
+      .filter(e => !freqWords.has(e.word))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 6);
+
+    result[m] = {
+      freq: byFreq.map(({ word, count }) => ({ word, count })),
+      unique: byUnique.map(({ word, count }) => ({ word, count })),
+    };
   }
   return result;
 }

@@ -142,11 +142,19 @@ function buildPersonalCard(personalWords) {
 
   const members = Object.keys(personalWords);
   const grids = members.map(name => {
-    const words = personalWords[name];
-    const maxCount = words[0]?.count || 1;
-    const tags = words.map(({ word, count }) => {
+    const { freq, unique } = personalWords[name];
+    const allWords = [...freq, ...unique];
+    const maxCount = allWords[0]?.count || 1;
+
+    const freqTags = freq.map(({ word, count }) => `
+      <div class="word-tag word-tag--freq">
+        <span class="word-text">${word}</span>
+        <span class="word-count">${count}</span>
+      </div>`).join('');
+
+    const uniqueTags = unique.map(({ word, count }) => {
       const pct = Math.round((count / maxCount) * 100);
-      return `<div class="word-tag" style="opacity:${0.4 + pct * 0.006}">
+      return `<div class="word-tag" style="opacity:${0.45 + pct * 0.005}">
         <span class="word-text">${word}</span>
         <span class="word-count">${count}</span>
       </div>`;
@@ -155,7 +163,8 @@ function buildPersonalCard(personalWords) {
     return `
       <div class="member-word-card">
         <div class="member-name-label">${name}</div>
-        <div class="word-tags">${tags || '<span style="color:var(--text-muted);font-size:0.8rem">데이터 없음</span>'}</div>
+        ${freqTags ? `<div class="word-group-label">자주 하는 말</div><div class="word-tags">${freqTags}</div>` : ''}
+        ${uniqueTags ? `<div class="word-group-label">이 사람만 쓰는</div><div class="word-tags">${uniqueTags}</div>` : ''}
       </div>
     `;
   }).join('');

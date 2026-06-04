@@ -350,6 +350,21 @@ body {
   color: var(--text-muted);
 }
 
+.word-group-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin: 8px 0 4px;
+}
+
+.word-tag--freq {
+  border-color: var(--accent);
+  background: rgba(124,111,255,0.12);
+}
+
+.word-tag--freq .word-text {
+  color: var(--accent);
+}
+
 /* ── 반응형 ── */
 @media (max-width: 480px) {
   .podium-name { font-size: 0.78rem; }
