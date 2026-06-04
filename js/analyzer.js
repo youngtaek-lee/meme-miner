@@ -35,34 +35,62 @@ function rank(scoreMap) {
     .map(([name, score], i) => ({ rank: i + 1, name, score }));
 }
 
+function toPercent(count, total) {
+  return total > 0 ? parseFloat(((count / total) * 100).toFixed(1)) : 0;
+}
+
 // 1. 지분율
 export function analyzeShare(messages, members) {
-  const counts = countPerMember(messages, members, () => 1);
   const total = messages.length;
-  const ranked = rank(counts).map(r => ({ ...r, percent: ((r.score / total) * 100).toFixed(1) }));
-  return { title: '이 구역 지분율 1위', emoji: '👑', unit: '개', ranked };
+  const counts = countPerMember(messages, members, () => 1);
+  const scores = {};
+  for (const m of members) scores[m] = toPercent(counts[m], total);
+  return { title: '이 구역 지분율 1위', emoji: '👑', unit: '%', ranked: rank(scores) };
 }
 
-// 2. 야행성 (00~04시)
+// 2. 야행성 (00~04시) — 본인 메시지 중 새벽 비율
 export function analyzeNight(messages, members) {
-  const counts = countPerMember(messages, members, msg => (msg.hour >= 0 && msg.hour < 5) ? 1 : 0);
-  return { title: '야행성', emoji: '🌙', unit: '개', ranked: rank(counts) };
+  const total = {};
+  const night = {};
+  for (const m of members) { total[m] = 0; night[m] = 0; }
+  for (const msg of messages) {
+    if (total[msg.name] === undefined) continue;
+    total[msg.name]++;
+    if (msg.hour >= 0 && msg.hour < 5) night[msg.name]++;
+  }
+  const scores = {};
+  for (const m of members) scores[m] = toPercent(night[m], total[m]);
+  return { title: '야행성', emoji: '🌙', unit: '%', ranked: rank(scores) };
 }
 
-// 3. ㅋ 수집가
+// 3. ㅋ 수집가 — 메시지 중 ㅋ 포함 비율
 export function analyzeKk(messages, members) {
-  const counts = countPerMember(messages, members, msg => (msg.content.match(/ㅋ/g) || []).length);
-  return { title: '"ㅋ" 수집가', emoji: '😂', unit: '개', ranked: rank(counts) };
+  const total = {};
+  const kk = {};
+  for (const m of members) { total[m] = 0; kk[m] = 0; }
+  for (const msg of messages) {
+    if (total[msg.name] === undefined) continue;
+    total[msg.name]++;
+    if (/ㅋ/.test(msg.content)) kk[msg.name]++;
+  }
+  const scores = {};
+  for (const m of members) scores[m] = toPercent(kk[m], total[m]);
+  return { title: '"ㅋ" 수집가', emoji: '😂', unit: '%', ranked: rank(scores) };
 }
 
-// 4. 욕쟁이
+// 4. 욕쟁이 — 욕설 포함 메시지 비율
 export function analyzeSwear(messages, members) {
-  const counts = countPerMember(messages, members, msg => {
-    let c = 0;
-    for (const w of SWEAR_WORDS) c += (msg.content.split(w).length - 1);
-    return c;
-  });
-  return { title: '욕쟁이', emoji: '🤬', unit: '회', ranked: rank(counts) };
+  const total = {};
+  const swear = {};
+  for (const m of members) { total[m] = 0; swear[m] = 0; }
+  for (const msg of messages) {
+    if (total[msg.name] === undefined) continue;
+    total[msg.name]++;
+    if (SWEAR_WORDS.some(w => msg.content.includes(w))) swear[msg.name]++;
+  }
+  const scores = {};
+  for (const m of members) scores[m] = toPercent(swear[m], total[m]);
+  return { title: '욕쟁이', emoji: '🤬', unit: '%', ranked: rank(scores) };
 }
 
 // 5. 퍼스트 펭귄 (오전 6시 이후 날짜 첫 메시지)
@@ -105,18 +133,34 @@ export function analyzeReaction(messages, members) {
   return { title: '대답에 영혼이 없는', emoji: '🤖', unit: '%', ranked: rank(scores) };
 }
 
-// 7. 프로 엄살러 (ㅠ/ㅜ)
+// 7. 프로 엄살러 — ㅠ/ㅜ 포함 메시지 비율
 export function analyzeCry(messages, members) {
-  const counts = countPerMember(messages, members, msg => (msg.content.match(/[ㅠㅜ]/g) || []).length);
-  return { title: '프로 엄살러', emoji: '😭', unit: '개', ranked: rank(counts) };
+  const total = {};
+  const cry = {};
+  for (const m of members) { total[m] = 0; cry[m] = 0; }
+  for (const msg of messages) {
+    if (total[msg.name] === undefined) continue;
+    total[msg.name]++;
+    if (/[ㅠㅜ]/.test(msg.content)) cry[msg.name]++;
+  }
+  const scores = {};
+  for (const m of members) scores[m] = toPercent(cry[m], total[m]);
+  return { title: '프로 엄살러', emoji: '😭', unit: '%', ranked: rank(scores) };
 }
 
-// 8. 짤 중독자
+// 8. 짤 중독자 — 짤/이모티콘 메시지 비율
 export function analyzeMedia(messages, members) {
-  const counts = countPerMember(messages, members, msg =>
-    (msg.content === '사진' || msg.content === '이모티콘' || msg.content === '동영상') ? 1 : 0
-  );
-  return { title: '짤 중독자', emoji: '📸', unit: '개', ranked: rank(counts) };
+  const total = {};
+  const media = {};
+  for (const m of members) { total[m] = 0; media[m] = 0; }
+  for (const msg of messages) {
+    if (total[msg.name] === undefined) continue;
+    total[msg.name]++;
+    if (msg.content === '사진' || msg.content === '이모티콘' || msg.content === '동영상') media[msg.name]++;
+  }
+  const scores = {};
+  for (const m of members) scores[m] = toPercent(media[m], total[m]);
+  return { title: '짤 중독자', emoji: '📸', unit: '%', ranked: rank(scores) };
 }
 
 // 9. 맞춤법 파괴자 (같은 오류 2회 이상 반복 시 카운트)

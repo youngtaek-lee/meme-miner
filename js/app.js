@@ -86,7 +86,6 @@ function buildCard(section) {
   const rest = section.ranked.slice(3);
   const max = section.ranked[0]?.score || 1;
   const desc = getSectionDesc(section.emoji);
-  const isShare = section.emoji === '👑';
 
   card.innerHTML = `
     <div class="section-header">
@@ -97,33 +96,31 @@ function buildCard(section) {
       </div>
     </div>
     <div class="podium">
-      ${podiumItem(top3[1], 'second', '🥈', section.unit, isShare)}
-      ${podiumItem(top3[0], 'first',  '🥇', section.unit, isShare)}
-      ${podiumItem(top3[2], 'third',  '🥉', section.unit, isShare)}
+      ${podiumItem(top3[1], 'second', '🥈', section.unit)}
+      ${podiumItem(top3[0], 'first',  '🥇', section.unit)}
+      ${podiumItem(top3[2], 'third',  '🥉', section.unit)}
     </div>
     <div class="rank-list">
-      ${rest.map(r => rankRow(r, max, section.unit, isShare)).join('')}
+      ${rest.map(r => rankRow(r, max, section.unit)).join('')}
     </div>
   `;
 
   return card;
 }
 
-function podiumItem(r, cls, medal, unit, isShare) {
+function podiumItem(r, cls, medal, unit) {
   if (!r) return `<div class="podium-item ${cls}"><div class="podium-block"></div></div>`;
-  const display = isShare ? `${r.percent}%` : `${r.score.toLocaleString()} ${unit}`;
   return `
     <div class="podium-item ${cls}">
       <div class="podium-name">${r.name}</div>
-      <div class="podium-score">${display}</div>
+      <div class="podium-score">${r.score.toLocaleString()}${unit}</div>
       <div class="podium-block">${medal}</div>
     </div>
   `;
 }
 
-function rankRow(r, max, unit, isShare) {
+function rankRow(r, max, unit) {
   const pct = max > 0 ? (r.score / max) * 100 : 0;
-  const display = isShare ? `${r.percent}%` : `${r.score.toLocaleString()} ${unit}`;
   return `
     <div class="rank-row">
       <span class="rank-num">${r.rank}</span>
@@ -131,7 +128,7 @@ function rankRow(r, max, unit, isShare) {
       <div class="rank-bar-wrap">
         <div class="rank-bar" style="width:${pct}%"></div>
       </div>
-      <span class="rank-score">${display}</span>
+      <span class="rank-score">${r.score.toLocaleString()}${unit}</span>
     </div>
   `;
 }
