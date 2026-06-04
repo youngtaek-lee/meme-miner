@@ -1,6 +1,8 @@
 import { parseKakaoTxt, getMembers } from './parser.js';
 import { analyzeAll } from './analyzer.js';
 
+let lastResults = null; // URL 공유용 저장
+
 const uploadScreen = document.getElementById('upload-screen');
 const resultScreen = document.getElementById('result-screen');
 const loadingScreen = document.getElementById('loading');
@@ -51,6 +53,7 @@ function processFile(file) {
       }
 
       const results = analyzeAll(messages, members);
+      lastResults = { results, total: messages.length, memberCount: members.length };
       renderResults(results, messages, members);
 
       loadingScreen.style.display = 'none';
@@ -153,6 +156,67 @@ function reset() {
   resultScreen.style.display = 'none';
   uploadScreen.style.display = 'flex';
   fileInput.value = '';
+  lastResults = null;
+  history.replaceState(null, '', location.pathname);
+}
+
+// ── 이미지 저장 ──
+document.getElementById('img-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('img-btn');
+  btn.disabled = true;
+  btn.textContent = '저장 중...';
+  try {
+    const target = document.getElementById('result-screen');
+    const canvas = await html2canvas(target, {
+      backgroundColor: '#0f0f13',
+      scale: 2,
+      useCORS: true,
+    });
+    const a = document.createElement('a');
+    a.download = 'meme-miner-결과.png';
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '📷 이미지 저장';
+  }
+});
+
+// ── URL 링크 복사 ──
+document.getElementById('url-btn').addEventListener('click', () => {
+  if (!lastResults) return;
+  const btn = document.getElementById('url-btn');
+  const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(lastResults));
+  const url = `${location.origin}${location.pathname}#share=${compressed}`;
+  navigator.clipboard.writeText(url).then(() => {
+    btn.textContent = '✅ 복사됨!';
+    setTimeout(() => { btn.textContent = '🔗 링크 복사'; }, 2000);
+  });
+});
+
+// ── 공유 URL로 접속 시 바로 결과 표시 ──
+function loadFromHash() {
+  const hash = location.hash;
+  if (!hash.startsWith('#share=')) return false;
+  try {
+    const compressed = hash.slice('#share='.length);
+    const data = JSON.parse(LZString.decompressFromEncodedURIComponent(compressed));
+    const header = document.querySelector('.result-header p');
+    header.textContent = `총 ${data.total.toLocaleString()}개 메시지 · 참여자 ${data.memberCount}명`;
+    const container = document.querySelector('.sections');
+    container.innerHTML = '';
+    for (const section of data.results) container.appendChild(buildCard(section));
+    lastResults = data;
+    uploadScreen.style.display = 'none';
+    loadingScreen.style.display = 'none';
+    resultScreen.style.display = 'block';
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 document.getElementById('reset-btn').addEventListener('click', reset);
+
+// 페이지 로드 시 hash 확인
+loadFromHash();

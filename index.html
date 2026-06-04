@@ -7,6 +7,8 @@
   <meta name="description" content="카카오톡 단체 대화를 업로드하면 친구들의 밈과 습관을 랭킹으로 보여줍니다." />
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
 </head>
 <body>
 
@@ -48,7 +50,11 @@
     <div class="result-header">
       <h1>단톡 밈 분석 결과 🔍</h1>
       <p></p>
-      <button class="reset-btn" id="reset-btn">← 다시 분석하기</button>
+      <div class="header-btns">
+        <button class="reset-btn" id="reset-btn">← 다시 분석하기</button>
+        <button class="share-btn" id="img-btn">📷 이미지 저장</button>
+        <button class="share-btn" id="url-btn">🔗 링크 복사</button>
+      </div>
     </div>
     <div class="sections"></div>
   </div>

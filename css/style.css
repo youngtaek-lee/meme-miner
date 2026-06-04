@@ -104,20 +104,38 @@ body {
 .result-header h1 { font-size: 1.6rem; font-weight: 900; }
 .result-header p { color: var(--text-muted); font-size: 0.88rem; margin-top: 6px; }
 
-.reset-btn {
+.header-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-top: 16px;
+}
+
+.reset-btn, .share-btn {
   padding: 8px 18px;
-  border: 1px solid var(--border);
   border-radius: 8px;
-  background: transparent;
-  color: var(--text-muted);
   cursor: pointer;
   font-size: 0.83rem;
   font-family: inherit;
-  transition: color 0.2s, border-color 0.2s;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+
+.reset-btn {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
 }
 
 .reset-btn:hover { color: var(--text); border-color: var(--text-muted); }
+
+.share-btn {
+  border: 1px solid var(--accent);
+  background: rgba(124,111,255,0.1);
+  color: var(--accent);
+}
+
+.share-btn:hover { background: rgba(124,111,255,0.2); }
+.share-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .sections {
   max-width: 720px;
