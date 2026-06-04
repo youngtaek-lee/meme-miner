@@ -1,0 +1,26 @@
+{
+  "name": "meme-miner",
+  "short_name": "meme-miner",
+  "description": "카카오톡 단체 대화 밈 분석기",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f0f13",
+  "theme_color": "#7c6fff",
+  "share_target": {
+    "action": "/",
+    "method": "GET",
+    "enctype": "multipart/form-data",
+    "params": {
+      "files": [
+        {
+          "name": "file",
+          "accept": ["text/plain", ".txt"]
+        }
+      ]
+    }
+  },
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

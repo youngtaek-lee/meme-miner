@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>meme-miner — 카톡 밈 분석기</title>
+  <meta name="description" content="카카오톡 단체 대화를 업로드하면 친구들의 밈과 습관을 랭킹으로 보여줍니다." />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- 업로드 화면 -->
+  <div id="upload-screen">
+    <div class="logo">meme<span>-</span>miner</div>
+    <p class="tagline">카톡 대화를 올리면 단톡 친구들의 모든 것을 파헤쳐 드립니다</p>
+
+    <div class="drop-zone" id="drop-zone">
+      <div class="icon">📂</div>
+      <strong>파일을 여기에 끌어다 놓거나 클릭하세요</strong>
+      <p>카카오톡 단체대화 .txt 파일</p>
+      <input type="file" id="file-input" accept=".txt" />
+    </div>
+
+    <div class="how-to">
+      <h3>카카오톡 대화 내보내기 방법</h3>
+      <ol>
+        <li>채팅방 상단 <b>≡ 메뉴</b> 탭</li>
+        <li><b>대화 내보내기</b> 선택</li>
+        <li>저장된 <b>.txt 파일</b>을 여기에 올리기</li>
+      </ol>
+    </div>
+
+    <p class="privacy-note">
+      <span>🔒 파일은 서버에 전송되지 않습니다.</span><br />
+      모든 분석은 내 브라우저 안에서만 이루어집니다.
+    </p>
+  </div>
+
+  <!-- 로딩 -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <p style="color: var(--text-muted); font-size: 0.9rem;">분석 중...</p>
+  </div>
+
+  <!-- 결과 화면 -->
+  <div id="result-screen">
+    <div class="result-header">
+      <h1>단톡 밈 분석 결과 🔍</h1>
+      <p></p>
+      <button class="reset-btn" id="reset-btn">← 다시 분석하기</button>
+    </div>
+    <div class="sections"></div>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
