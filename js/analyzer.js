@@ -199,6 +199,5 @@ export function analyzeAll(messages, members) {
     analyzeReaction(messages, members),
     analyzeCry(messages, members),
     analyzeMedia(messages, members),
-    analyzeTypo(messages, members),
   ];
 }
